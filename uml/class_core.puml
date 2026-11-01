@@ -1,0 +1,77 @@
+@startuml class_core
+!include style.iuml
+!pragma layout elk
+hide empty members
+hide circle
+skinparam nodesep 30
+skinparam ranksep 45
+skinparam classAttributeFontSize 10
+
+package "sim (simulation core)" {
+  class Simulator {
+    - clock : double
+    - events : PriorityQueue<Event>
+    - rng : Random
+    - nextSeq : long
+    + schedule(e : Event)
+    + run(endTime : double)
+    + now() : double
+    + rng() : Random
+  }
+  abstract class Event {
+    - time : double
+    - seq : long
+    + time() : double
+    + {abstract} execute(sim : Simulator)
+    + compareTo(other : Event) : int
+  }
+  interface Distribution <<interface>> {
+    + sample(rng : Random) : double
+    + mean() : double
+  }
+  class ExponentialDist {
+    - mean : double
+  }
+  class GammaDist {
+    - scale : double
+    - shape : double
+  }
+  class WeibullDist {
+    - scale : double
+    - shape : double
+  }
+  class Shifted {
+    - offset : double
+  }
+  class DistributionFactory {
+    + {static} parse(text : String) : Distribution
+  }
+}
+
+package "airport (events of the model)" {
+  class ArrivalEvent {
+    - airport : Airport
+    + execute(sim : Simulator)
+  }
+  class ServiceEndEvent {
+    - point : ServicePoint
+    + execute(sim : Simulator)
+  }
+  class StopEndEvent {
+    - passenger : Passenger
+    + execute(sim : Simulator)
+  }
+}
+
+Simulator "1" o-- "0..*" Event : future events\n{sorted by time} >
+Event <|-- ArrivalEvent
+Event <|-- ServiceEndEvent
+Event <|-- StopEndEvent
+
+Distribution <|.. ExponentialDist
+Distribution <|.. GammaDist
+Distribution <|.. WeibullDist
+Distribution <|.. Shifted
+Shifted o--> "1" Distribution : base
+DistributionFactory ..> Distribution : <<create>>
+@enduml

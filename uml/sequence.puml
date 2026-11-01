@@ -1,0 +1,51 @@
+@startuml sequence
+!include style.iuml
+hide footbox
+autonumber "<b>0:"
+skinparam maxMessageSize 200
+
+participant ":Simulator" as sim
+participant ":ArrivalEvent" as arr
+participant ":PassengerSource" as src
+participant ":CheckInArea" as area
+participant ":LineChoice" as choice
+participant ":WaitingLine" as line
+participant ":ServicePoint" as point
+participant ":StatisticsCollector" as stats
+
+sim -> arr : execute(sim)
+activate arr
+arr -> src : next(sim)
+activate src
+src -> stats : passengerArrived(p)
+src --> arr : p
+deactivate src
+arr -> arr : area = airport.checkInFor(p.group())
+arr -> area : admit(p, sim)
+activate area
+area -> choice : choose(lines, rng)
+choice --> area : line
+area -> area : p.changeState(WAITING_FOR_CHECK_IN)
+area -> line : join(p, sim)
+activate line
+line -> line : p.startWaiting(now);\nadd p at the back
+line -> line : dispatch(sim)
+alt a point fed by this line is free
+  line -> point : startNext(sim)
+  activate point
+  point -> line : takeNext()
+  line --> point : p
+  point -> point : p.changeState(CHECKING_IN)
+  point -> stats : waitEnded(p, line, wait)
+  point -> sim : schedule(ServiceEndEvent\nat now + service time)
+  deactivate point
+else all its points are busy
+  note over line : p stays in the line
+end
+deactivate line
+deactivate area
+arr -> src : nextArrivalTime(sim)
+src --> arr : t
+arr -> sim : schedule(ArrivalEvent at t)
+deactivate arr
+@enduml

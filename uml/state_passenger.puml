@@ -1,0 +1,24 @@
+@startuml state_passenger
+!include style.iuml
+hide empty description
+left to right direction
+skinparam ranksep 30
+skinparam nodesep 24
+
+state "Arrived" as AR
+state "Waiting for\ncheck-in" as WC
+state "Checking in" as CI
+state "Waiting for\nscreening" as WS
+state "Being\nscreened" as BS
+state "Stopped" as ST
+state "Departed" as DP
+[*] --> AR : created
+AR --> WC : join line
+WC --> CI : point free
+CI --> WS : check-in\ndone
+WS --> BS : lane free
+BS --> ST : done\n[selected]
+BS --> DP : done\n[not selected]
+ST --> DP : check done
+DP --> [*]
+@enduml

@@ -1,0 +1,97 @@
+@startuml class_app
+!include style.iuml
+hide empty members
+hide circle
+
+skinparam nodesep 25
+skinparam ranksep 50
+skinparam classAttributeFontSize 10
+
+package "app (application)" {
+  class ConsoleMenu {
+    + {static} main(args : String[])
+  }
+  class SimulatorFacade {
+    - current : Scenario
+    - lastResult : ExperimentResult
+    + loadScenario(file) : List<String>
+    + run(progress) : ExperimentResult
+    + showResults() : String
+    + saveCsv(file)
+    + compare(files) : String
+  }
+  class Scenario {
+    - settings : Properties
+    + {static} load(file) : Scenario
+    + get(key) : String
+    + name() : String
+    + runs() : int
+    + seed() : long
+    + hours() : double
+  }
+  class AirportBuilder {
+    + check(s) : List<String>
+    + build(s, listener) : Airport
+  }
+  class ExperimentRunner {
+    + run(s, progress) : ExperimentResult
+  }
+}
+
+package "results" {
+  class StatisticsCollector {
+    - waits : Map<String, WaitStats>
+    - arrivals : Map<String, Integer>
+    + passengerArrived(p)
+    + waitEnded(p, line, wait)
+    + summary(airport, endTime) : RunResult
+  }
+  class RunResult {
+    - utilization : Map<ResourceType, Double>
+    - arrivals : Map<String, Integer>
+  }
+  class WaitStats {
+    - count : long
+    - total : double
+    - min : double
+    - max : double
+    + add(wait)
+    + average() : double
+  }
+  class ExperimentResult {
+    - scenarioName : String
+    - note : String
+    + add(run)
+    + averageWait(category) : double
+    + averageUtilization(type) : double
+    + toText() : String
+    + toCsv() : String
+    + {static} compare(results) : String
+  }
+}
+
+interface SimListener <<interface>>
+
+note as N1
+  ExperimentRunner creates a new
+  Simulator (Figure 3) and asks
+  AirportBuilder for a new Airport
+  (Figure 2) for every run.
+end note
+
+ConsoleMenu --> "1" SimulatorFacade
+SimulatorFacade --> "0..1" Scenario : current >
+SimulatorFacade --> "1" AirportBuilder
+SimulatorFacade --> "1" ExperimentRunner
+SimulatorFacade --> "0..1" ExperimentResult : last result >
+ExperimentRunner --> "1" AirportBuilder
+AirportBuilder ..> Scenario : reads >
+ExperimentRunner ..> StatisticsCollector : <<create>>
+ExperimentRunner ..> ExperimentResult : <<create>>
+ExperimentRunner .. N1
+
+SimListener <|.. StatisticsCollector
+StatisticsCollector ..> RunResult : <<create>>
+ExperimentResult o-- "1..*" RunResult : runs >
+RunResult o-- "0..*" WaitStats : waits >
+@enduml

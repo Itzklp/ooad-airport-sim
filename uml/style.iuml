@@ -1,0 +1,79 @@
+skinparam dpi 220
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam BackgroundColor white
+skinparam roundCorner 8
+skinparam ArrowColor #2F3B4C
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #2F3B4C
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #B59A4A
+skinparam NoteFontSize 11
+
+skinparam class {
+  BackgroundColor #F5F8FC
+  BorderColor #3E4C5E
+  HeaderBackgroundColor #DCE5F0
+  FontStyle bold
+  AttributeFontSize 11
+  StereotypeFontSize 10
+  BorderThickness 1.1
+}
+skinparam classAttributeIconSize 0
+
+skinparam package {
+  BorderColor #8A97A8
+  FontColor #3E4C5E
+  FontStyle bold
+  BackgroundColor #FFFFFF
+}
+skinparam packageStyle rectangle
+
+skinparam usecase {
+  BackgroundColor #F5F8FC
+  BorderColor #3E4C5E
+  BorderThickness 1.1
+}
+skinparam actor {
+  BorderColor #2F3B4C
+  BackgroundColor #F5F8FC
+  FontStyle bold
+}
+skinparam rectangle {
+  BorderColor #3E4C5E
+  FontStyle bold
+  FontColor #3E4C5E
+}
+
+skinparam activity {
+  BackgroundColor #F5F8FC
+  BorderColor #3E4C5E
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #3E4C5E
+}
+skinparam swimlane {
+  BorderColor #8A97A8
+  TitleFontStyle bold
+  TitleFontColor #3E4C5E
+}
+
+skinparam sequence {
+  ParticipantBackgroundColor #DCE5F0
+  ParticipantBorderColor #3E4C5E
+  ParticipantFontStyle bold
+  LifeLineBorderColor #8A97A8
+  LifeLineBackgroundColor #F5F8FC
+  GroupBorderColor #8A97A8
+  GroupBackgroundColor #EEF2F7
+  GroupHeaderFontStyle bold
+}
+
+skinparam state {
+  BackgroundColor #F5F8FC
+  BorderColor #3E4C5E
+  StartColor #2F3B4C
+  EndColor #2F3B4C
+  AttributeFontSize 11
+}

@@ -1,0 +1,27 @@
+@startuml usecase
+!include style.iuml
+left to right direction
+
+actor "Airport Manager" as manager
+actor "Analyst" as analyst
+
+rectangle "Airport Passenger Flow Simulator" {
+  usecase "View results" as view
+  usecase "Compare scenarios" as compare
+  usecase "Set up a scenario" as setup
+  usecase "Run the simulation" as run
+  usecase "Check the scenario" as check
+  usecase "Save results\nto a CSV file" as save
+}
+
+analyst -up-|> manager
+manager -- view
+manager -- compare
+analyst -- setup
+analyst -- run
+
+setup ..> check : <<include>>
+run ..> check : <<include>>
+compare ..> run : <<include>>
+save .up.> view : <<extend>>
+@enduml

@@ -1,0 +1,11 @@
+@startuml state_point
+!include style.iuml
+hide empty description
+left to right direction
+skinparam ranksep 60
+
+[*] --> Idle
+Idle --> Busy : passenger\nassigned
+Busy --> Busy : service done\n[line not empty]
+Busy --> Idle : service done\n[line empty]
+@enduml

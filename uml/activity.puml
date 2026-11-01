@@ -1,0 +1,30 @@
+@startuml activity
+!include style.iuml
+skinparam defaultFontSize 13
+
+|Passenger|
+start
+:Arrive at the terminal\n(airline is known);
+if (Self check-in?) then (yes)
+  :Join a kiosk line;
+else (no)
+  :Join a counter line;
+endif
+note right
+  If there is more than one
+  line, join the shortest one
+end note
+|Check-in|
+:Check in at a kiosk\nor with an agent;
+|Passenger|
+:Go to security checkpoint\n1 or 2 and join its line;
+|Security|
+:Screen carry-on bags;
+if (Selected for a stop?) then (yes)
+  :Extra check;
+else (no)
+endif
+|Passenger|
+:Leave for the gate;
+stop
+@enduml

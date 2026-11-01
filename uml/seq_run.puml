@@ -1,0 +1,54 @@
+@startuml seq_run
+!include style.iuml
+hide footbox
+autonumber "<b>0:"
+skinparam maxMessageSize 210
+
+actor Analyst as user
+participant ":ConsoleMenu" as menu
+participant ":SimulatorFacade" as facade
+participant ":ExperimentRunner" as runner
+participant ":AirportBuilder" as builder
+participant ":Simulator" as sim
+participant ":StatisticsCollector" as stats
+
+user -> menu : choose "Run the simulation"
+activate menu
+menu -> facade : run(progress)
+activate facade
+facade -> runner : run(scenario, progress)
+activate runner
+runner -> builder : check(scenario)
+builder --> runner : errors
+alt errors is empty
+  loop for each run i (80 by default)
+    runner -> sim ** : new Simulator(seed + i)
+    runner -> stats ** : new StatisticsCollector()
+    runner -> builder : build(scenario, stats)
+    builder --> runner : airport
+    runner -> sim : schedule(first ArrivalEvent)
+    runner -> sim : run(endTime)
+    activate sim
+    loop until the next event is after endTime
+      sim -> sim : take the earliest event e,\nmove the clock, e.execute(this)
+    end
+    deactivate sim
+    runner -> stats : summary(airport, endTime)
+    stats --> runner : runResult
+    runner -> runner : result.add(runResult)
+    runner -> menu : progress(i + 1)
+  end
+  runner --> facade : result
+  facade --> menu : result
+  menu -> facade : showResults()
+  facade --> menu : report
+  menu --> user : waiting times, utilization,\npassengers per day
+else errors found
+  runner --> facade : exception with the errors
+  facade --> menu : exception
+  menu --> user : list of errors
+end
+deactivate runner
+deactivate facade
+deactivate menu
+@enduml

@@ -1,0 +1,132 @@
+@startuml class_airport
+!include style.iuml
+hide empty members
+hide circle
+skinparam nodesep 22
+skinparam ranksep 40
+skinparam classAttributeFontSize 10
+
+class Airport {
+  - name : String
+  + checkInFor(g) : CheckInArea
+  + source() : PassengerSource
+  + security() : SecurityCheckpoint
+  + lines() : List<WaitingLine>
+  + servicePoints() : List<ServicePoint>
+}
+class CarrierGroup {
+  - name : String
+  - share : double
+  - kioskShare : double
+}
+class PassengerSource {
+  - interarrival : Distribution
+  - nextId : int
+  + addListener(l)
+  + next(sim) : Passenger
+  + nextArrivalTime(sim) : double
+}
+class Passenger {
+  - id : int
+  - arrivalTime : double
+  - usesKiosk : boolean
+  - joinedLineAt : double
+  - state : PassengerState
+  + changeState(next)
+  + startWaiting(time)
+  + waitTime(now) : double
+}
+enum PassengerState <<enumeration>> {
+  ARRIVED
+  WAITING_FOR_CHECK_IN
+  CHECKING_IN
+  WAITING_FOR_SCREENING
+  BEING_SCREENED
+  STOPPED
+  DEPARTED
+  + canMoveTo(next) : boolean
+}
+class CheckInArea {
+  + admit(p, sim)
+}
+class SecurityCheckpoint {
+  - stopShare : double
+  - stopTime : Distribution
+  + admit(p, sim)
+  + afterScreening(p, sim)
+}
+class WaitingLine {
+  - name : String
+  - category : String
+  - queue : Deque<Passenger>
+  + join(p, sim)
+  + dispatch(sim)
+  + takeNext() : Passenger
+  + length() : int
+}
+abstract class ServicePoint {
+  - name : String
+  - type : ResourceType
+  - serviceTime : Distribution
+  - current : Passenger
+  - busyTime : double
+  + addListener(l)
+  + startNext(sim) {leaf}
+  + finishService(sim) {leaf}
+  + isBusy() : boolean
+  + busyTime(now) : double
+  # {abstract} servingState() : PassengerState
+  # {abstract} sendOn(p, sim)
+}
+class CheckInPoint {
+  # servingState() : PassengerState
+  # sendOn(p, sim)
+}
+class ScreeningLane {
+  # servingState() : PassengerState
+  # sendOn(p, sim)
+}
+enum ResourceType <<enumeration>> {
+  MANNED_CHECK_IN
+  SELF_CHECK_IN
+  SECURITY
+}
+interface LineChoice <<interface>> {
+  + choose(lines, rng) : WaitingLine
+}
+class RandomSplit
+class ShortestLine
+interface SimListener <<interface>> {
+  + passengerArrived(p)
+  + waitEnded(p, line, wait)
+}
+
+Airport *-left- "1..*" CarrierGroup
+Airport *-- "1" PassengerSource
+Airport *-- "1..*" CheckInArea
+Airport *-- "1" SecurityCheckpoint
+
+PassengerSource -left-> "1..*" CarrierGroup : picks from >
+PassengerSource ..> Passenger : <<create>>
+PassengerSource --> "0..*" SimListener : notifies >
+Passenger "*" -up-> "1" CarrierGroup : flies with >
+CheckInArea "1" -up-> "1" CarrierGroup : serves >
+
+CheckInArea *-- "0..*" WaitingLine : kiosk and\ncounter lines
+SecurityCheckpoint *-- "1..*" WaitingLine
+CheckInArea --> "1" LineChoice
+SecurityCheckpoint --> "1" LineChoice
+LineChoice <|.. RandomSplit
+LineChoice <|.. ShortestLine
+
+WaitingLine "1" o-- "0..*" Passenger : holds\n{ordered} >
+WaitingLine "1" -- "1..*" ServicePoint : feeds >
+ServicePoint --> "0..*" SimListener : notifies >
+ServicePoint <|-- CheckInPoint
+ServicePoint <|-- ScreeningLane
+CheckInPoint -up-> "1" SecurityCheckpoint : sends to >
+ScreeningLane -up-> "1" SecurityCheckpoint : reports to >
+
+Passenger -[hidden]down- PassengerState
+ServicePoint -[hidden]right- ResourceType
+@enduml

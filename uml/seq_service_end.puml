@@ -1,0 +1,39 @@
+@startuml seq_service_end
+!include style.iuml
+hide footbox
+autonumber "<b>0:"
+skinparam maxMessageSize 200
+
+participant ":Simulator" as sim
+participant ":ServiceEndEvent" as ev
+participant "point:CheckInPoint" as point
+participant "line:WaitingLine" as line
+participant ":SecurityCheckpoint" as sec
+participant ":LineChoice" as choice
+participant "secLine:WaitingLine" as sline
+
+sim -> ev : execute(sim)
+activate ev
+ev -> point : finishService(sim)
+activate point
+point -> point : p = current; current = null;\nbusyTime += now - busySince
+point -> point : sendOn(p, sim)
+note right of point : hook filled in by CheckInPoint\n(Template Method)
+point -> sec : admit(p, sim)
+activate sec
+sec -> choice : choose(lines, rng)
+choice --> sec : secLine
+sec -> sec : p.changeState(WAITING_FOR_SCREENING)
+sec -> sline : join(p, sim)
+note right of sline : a free screening lane starts\nserving p, as in Figure 7
+deactivate sec
+point -> line : dispatch(sim)
+activate line
+alt passengers are waiting in this line
+  line -> point : startNext(sim)
+  note right of point : the next passenger is served
+end
+deactivate line
+deactivate point
+deactivate ev
+@enduml
