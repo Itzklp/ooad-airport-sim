@@ -1,0 +1,26 @@
+Loaded scenario: Two lines
+Run 80 finished
+Scenario: Two lines  (80 runs)
+Note: Station counts, kiosk shares, stop settings and Weibull shapes are assumptions; service means were calibrated to the paper's utilization (the paper prints its parameters as zeros).
+
+Waiting time (minutes)                    Average    Std dev    Minimum    Maximum
+American/Continental self check-in          11.24      10.09       0.00     176.45
+American/Continental manned check-in        11.08       6.94       0.00     175.54
+Southwest self check-in                     17.25      10.89       0.00     133.34
+Southwest manned check-in                   11.53       6.59       0.00     122.50
+US Airways self check-in                     7.16       2.82       0.00      80.09
+US Airways manned check-in                   6.86       3.82       0.00      94.39
+Security checkpoint 1                        3.26       0.99       0.00      33.63
+Security checkpoint 2                        3.27       0.84       0.00      31.78
+(Std dev is between the run averages.)
+
+Utilization                               Average
+Manned check-in                            78.72%
+Self check-in                              83.41%
+Security checkpoint                        82.19%
+
+Passengers per day                        Average
+American/Continental                       178.66
+Southwest                                 1074.09
+US Airways                                 958.19
+

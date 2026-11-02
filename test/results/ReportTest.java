@@ -50,6 +50,13 @@ class ReportTest {
     }
 
     @Test
+    void standardDeviationIsBetweenRunAverages() {
+        // run averages 90 s and 120 s: mean 105 s, sample standard deviation sqrt(450) s
+        assertEquals(Math.sqrt(450) / 60, threeRuns("A").waitStdDev("Counter line"), 1e-9);
+        assertEquals(0.0, threeRuns("A").waitStdDev("Security 1"), 1e-9, "every run had the same average");
+    }
+
+    @Test
     void minimumAndMaximumAreOverAllRuns() {
         ExperimentResult r = threeRuns("A");
         assertEquals(0.0, r.minWait("Counter line"), 1e-9);
@@ -68,12 +75,12 @@ class ReportTest {
     @Test
     void csvHasTheHeaderAndOneRowPerLineCategory() {
         List<String> rows = threeRuns("A").toCsv().lines().toList();
-        assertEquals("section,name,average,minimum,maximum", rows.get(0));
-        assertEquals("wait_minutes,Counter line,1.7500,0.0000,4.0000", rows.get(1));
-        assertEquals("wait_minutes,Security 1,0.0500,0.0000,0.1000", rows.get(2));
+        assertEquals("section,name,average,std_dev,minimum,maximum", rows.get(0));
+        assertEquals("wait_minutes,Counter line,1.7500,0.3536,0.0000,4.0000", rows.get(1));
+        assertEquals("wait_minutes,Security 1,0.0500,0.0000,0.0000,0.1000", rows.get(2));
         assertEquals(1 + 2 + ResourceType.values().length + 1, rows.size(), "header, 2 lines, 3 resources, 1 airline");
-        assertTrue(rows.contains("utilization_percent,Manned check-in,80.0000,,"));
-        assertTrue(rows.contains("passengers_per_day,Airline,110.0000,,"));
+        assertTrue(rows.contains("utilization_percent,Manned check-in,80.0000,,,"));
+        assertTrue(rows.contains("passengers_per_day,Airline,110.0000,,,"));
     }
 
     @Test

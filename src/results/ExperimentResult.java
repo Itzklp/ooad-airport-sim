@@ -55,6 +55,21 @@ public class ExperimentResult {
         return n == 0 ? 0.0 : sum / n / 60.0;
     }
 
+    /** Standard deviation of the run averages in minutes, so two scenarios can be compared as in the paper's t-tests. */
+    public double waitStdDev(String category) {
+        double mean = averageWait(category) * 60.0;
+        double sumSq = 0.0;
+        int n = 0;
+        for (RunResult r : runs) {
+            WaitStats w = r.waits().get(category);
+            if (w != null && w.count() > 0) {
+                sumSq += (w.average() - mean) * (w.average() - mean);
+                n++;
+            }
+        }
+        return n < 2 ? 0.0 : Math.sqrt(sumSq / (n - 1)) / 60.0;
+    }
+
     public double minWait(String category) {
         double min = Double.POSITIVE_INFINITY;
         for (RunResult r : runs) {
@@ -104,10 +119,12 @@ public class ExperimentResult {
         StringBuilder sb = new StringBuilder();
         sb.append("Scenario: ").append(scenarioName).append("  (").append(runs.size()).append(" runs)\n");
         if (note != null && !note.isBlank()) sb.append("Note: ").append(note).append('\n');
-        sb.append(String.format(Locale.ROOT, "%n%-38s %10s %10s %10s%n", "Waiting time (minutes)", "Average", "Minimum", "Maximum"));
+        sb.append(String.format(Locale.ROOT, "%n%-38s %10s %10s %10s %10s%n", "Waiting time (minutes)", "Average", "Std dev", "Minimum", "Maximum"));
         for (String c : categories()) {
-            sb.append(String.format(Locale.ROOT, "%-38s %10.2f %10.2f %10.2f%n", c, averageWait(c), minWait(c), maxWait(c)));
+            sb.append(String.format(Locale.ROOT, "%-38s %10.2f %10.2f %10.2f %10.2f%n",
+                    c, averageWait(c), waitStdDev(c), minWait(c), maxWait(c)));
         }
+        sb.append("(Std dev is between the run averages.)\n");
         sb.append(String.format(Locale.ROOT, "%n%-38s %10s%n", "Utilization", "Average"));
         for (ResourceType t : ResourceType.values()) {
             sb.append(String.format(Locale.ROOT, "%-38s %9.2f%%%n", t.label(), averageUtilization(t)));
@@ -121,15 +138,16 @@ public class ExperimentResult {
 
     /** The same figures as comma-separated values, for a spreadsheet. */
     public String toCsv() {
-        StringBuilder sb = new StringBuilder("section,name,average,minimum,maximum\n");
+        StringBuilder sb = new StringBuilder("section,name,average,std_dev,minimum,maximum\n");
         for (String c : categories()) {
-            sb.append(String.format(Locale.ROOT, "wait_minutes,%s,%.4f,%.4f,%.4f%n", c, averageWait(c), minWait(c), maxWait(c)));
+            sb.append(String.format(Locale.ROOT, "wait_minutes,%s,%.4f,%.4f,%.4f,%.4f%n",
+                    c, averageWait(c), waitStdDev(c), minWait(c), maxWait(c)));
         }
         for (ResourceType t : ResourceType.values()) {
-            sb.append(String.format(Locale.ROOT, "utilization_percent,%s,%.4f,,%n", t.label(), averageUtilization(t)));
+            sb.append(String.format(Locale.ROOT, "utilization_percent,%s,%.4f,,,%n", t.label(), averageUtilization(t)));
         }
         for (String g : groups()) {
-            sb.append(String.format(Locale.ROOT, "passengers_per_day,%s,%.4f,,%n", g, averageArrivals(g)));
+            sb.append(String.format(Locale.ROOT, "passengers_per_day,%s,%.4f,,,%n", g, averageArrivals(g)));
         }
         return sb.toString();
     }
