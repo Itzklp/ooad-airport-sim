@@ -8,10 +8,8 @@ import java.util.Set;
 
 import airport.ResourceType;
 
-/**
- * The results of all runs of one scenario, summarised the way the paper reports them:
- * average of the run averages, smallest minimum and largest maximum, in minutes.
- */
+// Combines the runs the way the paper reports them: average of the run averages,
+// smallest minimum and largest maximum, all in minutes.
 public class ExperimentResult {
 
     private final String scenarioName;
@@ -37,143 +35,140 @@ public class ExperimentResult {
 
     public Set<String> categories() {
         Set<String> names = new LinkedHashSet<>();
-        for (RunResult r : runs) names.addAll(r.waits().keySet());
+        for (RunResult run : runs) names.addAll(run.waits().keySet());
         return names;
     }
 
-    /** Average waiting time in minutes, over the runs in which someone used the line. */
+    // Runs in which nobody used the line are left out of the average.
     public double averageWait(String category) {
         double sum = 0.0;
-        int n = 0;
-        for (RunResult r : runs) {
-            WaitStats w = r.waits().get(category);
-            if (w != null && w.count() > 0) {
-                sum += w.average();
-                n++;
+        int usedRuns = 0;
+        for (RunResult run : runs) {
+            WaitStats waits = run.waits().get(category);
+            if (waits != null && waits.count() > 0) {
+                sum += waits.average();
+                usedRuns++;
             }
         }
-        return n == 0 ? 0.0 : sum / n / 60.0;
+        return usedRuns == 0 ? 0.0 : sum / usedRuns / 60.0;
     }
 
-    /** Standard deviation of the run averages in minutes, so two scenarios can be compared as in the paper's t-tests. */
+    // Standard deviation between the run averages, which is what a t-test between scenarios needs.
     public double waitStdDev(String category) {
         double mean = averageWait(category) * 60.0;
-        double sumSq = 0.0;
-        int n = 0;
-        for (RunResult r : runs) {
-            WaitStats w = r.waits().get(category);
-            if (w != null && w.count() > 0) {
-                sumSq += (w.average() - mean) * (w.average() - mean);
-                n++;
+        double sumOfSquares = 0.0;
+        int usedRuns = 0;
+        for (RunResult run : runs) {
+            WaitStats waits = run.waits().get(category);
+            if (waits != null && waits.count() > 0) {
+                double difference = waits.average() - mean;
+                sumOfSquares += difference * difference;
+                usedRuns++;
             }
         }
-        return n < 2 ? 0.0 : Math.sqrt(sumSq / (n - 1)) / 60.0;
+        return usedRuns < 2 ? 0.0 : Math.sqrt(sumOfSquares / (usedRuns - 1)) / 60.0;
     }
 
     public double minWait(String category) {
-        double min = Double.POSITIVE_INFINITY;
-        for (RunResult r : runs) {
-            WaitStats w = r.waits().get(category);
-            if (w != null && w.count() > 0) min = Math.min(min, w.min());
+        double smallest = Double.POSITIVE_INFINITY;
+        for (RunResult run : runs) {
+            WaitStats waits = run.waits().get(category);
+            if (waits != null && waits.count() > 0) smallest = Math.min(smallest, waits.min());
         }
-        return min == Double.POSITIVE_INFINITY ? 0.0 : min / 60.0;
+        return smallest == Double.POSITIVE_INFINITY ? 0.0 : smallest / 60.0;
     }
 
     public double maxWait(String category) {
-        double max = 0.0;
-        for (RunResult r : runs) {
-            WaitStats w = r.waits().get(category);
-            if (w != null) max = Math.max(max, w.max());
+        double largest = 0.0;
+        for (RunResult run : runs) {
+            WaitStats waits = run.waits().get(category);
+            if (waits != null) largest = Math.max(largest, waits.max());
         }
-        return max / 60.0;
+        return largest / 60.0;
     }
 
-    /** Average utilization of one resource type, as a percentage. */
     public double averageUtilization(ResourceType type) {
         double sum = 0.0;
-        int n = 0;
-        for (RunResult r : runs) {
-            Double u = r.utilization().get(type);
-            if (u != null) {
-                sum += u;
-                n++;
+        int runsWithType = 0;
+        for (RunResult run : runs) {
+            Double utilization = run.utilization().get(type);
+            if (utilization != null) {
+                sum += utilization;
+                runsWithType++;
             }
         }
-        return n == 0 ? 0.0 : 100.0 * sum / n;
+        return runsWithType == 0 ? 0.0 : 100.0 * sum / runsWithType;
     }
 
     public double averageArrivals(String group) {
         double sum = 0.0;
-        for (RunResult r : runs) sum += r.arrivals().getOrDefault(group, 0);
+        for (RunResult run : runs) sum += run.arrivals().getOrDefault(group, 0);
         return runs.isEmpty() ? 0.0 : sum / runs.size();
     }
 
     private Set<String> groups() {
         Set<String> names = new LinkedHashSet<>();
-        for (RunResult r : runs) names.addAll(r.arrivals().keySet());
+        for (RunResult run : runs) names.addAll(run.arrivals().keySet());
         return names;
     }
 
-    /** A plain-text report for the console. */
     public String toText() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Scenario: ").append(scenarioName).append("  (").append(runs.size()).append(" runs)\n");
-        if (note != null && !note.isBlank()) sb.append("Note: ").append(note).append('\n');
-        sb.append(String.format(Locale.ROOT, "%n%-38s %10s %10s %10s %10s%n", "Waiting time (minutes)", "Average", "Std dev", "Minimum", "Maximum"));
-        for (String c : categories()) {
-            sb.append(String.format(Locale.ROOT, "%-38s %10.2f %10.2f %10.2f %10.2f%n",
-                    c, averageWait(c), waitStdDev(c), minWait(c), maxWait(c)));
+        StringBuilder text = new StringBuilder();
+        text.append("Scenario: ").append(scenarioName).append("  (").append(runs.size()).append(" runs)\n");
+        if (note != null && !note.isBlank()) text.append("Note: ").append(note).append('\n');
+        text.append(String.format(Locale.ROOT, "%n%-38s %10s %10s %10s %10s%n", "Waiting time (minutes)", "Average", "Std dev", "Minimum", "Maximum"));
+        for (String category : categories()) {
+            text.append(String.format(Locale.ROOT, "%-38s %10.2f %10.2f %10.2f %10.2f%n",
+                    category, averageWait(category), waitStdDev(category), minWait(category), maxWait(category)));
         }
-        sb.append("(Std dev is between the run averages.)\n");
-        sb.append(String.format(Locale.ROOT, "%n%-38s %10s%n", "Utilization", "Average"));
-        for (ResourceType t : ResourceType.values()) {
-            sb.append(String.format(Locale.ROOT, "%-38s %9.2f%%%n", t.label(), averageUtilization(t)));
+        text.append("(Std dev is between the run averages.)\n");
+        text.append(String.format(Locale.ROOT, "%n%-38s %10s%n", "Utilization", "Average"));
+        for (ResourceType type : ResourceType.values()) {
+            text.append(String.format(Locale.ROOT, "%-38s %9.2f%%%n", type.label(), averageUtilization(type)));
         }
-        sb.append(String.format(Locale.ROOT, "%n%-38s %10s%n", "Passengers per day", "Average"));
-        for (String g : groups()) {
-            sb.append(String.format(Locale.ROOT, "%-38s %10.2f%n", g, averageArrivals(g)));
+        text.append(String.format(Locale.ROOT, "%n%-38s %10s%n", "Passengers per day", "Average"));
+        for (String group : groups()) {
+            text.append(String.format(Locale.ROOT, "%-38s %10.2f%n", group, averageArrivals(group)));
         }
-        return sb.toString();
+        return text.toString();
     }
 
-    /** The same figures as comma-separated values, for a spreadsheet. */
     public String toCsv() {
-        StringBuilder sb = new StringBuilder("section,name,average,std_dev,minimum,maximum\n");
-        for (String c : categories()) {
-            sb.append(String.format(Locale.ROOT, "wait_minutes,%s,%.4f,%.4f,%.4f,%.4f%n",
-                    c, averageWait(c), waitStdDev(c), minWait(c), maxWait(c)));
+        StringBuilder csv = new StringBuilder("section,name,average,std_dev,minimum,maximum\n");
+        for (String category : categories()) {
+            csv.append(String.format(Locale.ROOT, "wait_minutes,%s,%.4f,%.4f,%.4f,%.4f%n",
+                    category, averageWait(category), waitStdDev(category), minWait(category), maxWait(category)));
         }
-        for (ResourceType t : ResourceType.values()) {
-            sb.append(String.format(Locale.ROOT, "utilization_percent,%s,%.4f,,,%n", t.label(), averageUtilization(t)));
+        for (ResourceType type : ResourceType.values()) {
+            csv.append(String.format(Locale.ROOT, "utilization_percent,%s,%.4f,,,%n", type.label(), averageUtilization(type)));
         }
-        for (String g : groups()) {
-            sb.append(String.format(Locale.ROOT, "passengers_per_day,%s,%.4f,,,%n", g, averageArrivals(g)));
+        for (String group : groups()) {
+            csv.append(String.format(Locale.ROOT, "passengers_per_day,%s,%.4f,,,%n", group, averageArrivals(group)));
         }
-        return sb.toString();
+        return csv.toString();
     }
 
-    /** Average waits and utilization of several scenarios side by side. */
     public static String compare(List<ExperimentResult> results) {
         Set<String> rows = new LinkedHashSet<>();
-        for (ExperimentResult r : results) rows.addAll(r.categories());
-        StringBuilder sb = new StringBuilder(String.format(Locale.ROOT, "%-38s", "Average wait (minutes)"));
-        for (ExperimentResult r : results) sb.append(String.format(Locale.ROOT, " %16.16s", r.scenarioName()));
-        sb.append('\n');
+        for (ExperimentResult result : results) rows.addAll(result.categories());
+        StringBuilder table = new StringBuilder(String.format(Locale.ROOT, "%-38s", "Average wait (minutes)"));
+        for (ExperimentResult result : results) table.append(String.format(Locale.ROOT, " %16.16s", result.scenarioName()));
+        table.append('\n');
         for (String row : rows) {
-            sb.append(String.format(Locale.ROOT, "%-38s", row));
-            for (ExperimentResult r : results) {
-                sb.append(r.categories().contains(row)
-                        ? String.format(Locale.ROOT, " %16.2f", r.averageWait(row))
+            table.append(String.format(Locale.ROOT, "%-38s", row));
+            for (ExperimentResult result : results) {
+                table.append(result.categories().contains(row)
+                        ? String.format(Locale.ROOT, " %16.2f", result.averageWait(row))
                         : String.format(Locale.ROOT, " %16s", "-"));
             }
-            sb.append('\n');
+            table.append('\n');
         }
-        sb.append(String.format(Locale.ROOT, "%n%-38s%n", "Utilization (%)"));
-        for (ResourceType t : ResourceType.values()) {
-            sb.append(String.format(Locale.ROOT, "%-38s", t.label()));
-            for (ExperimentResult r : results) sb.append(String.format(Locale.ROOT, " %16.2f", r.averageUtilization(t)));
-            sb.append('\n');
+        table.append(String.format(Locale.ROOT, "%n%-38s%n", "Utilization (%)"));
+        for (ResourceType type : ResourceType.values()) {
+            table.append(String.format(Locale.ROOT, "%-38s", type.label()));
+            for (ExperimentResult result : results) table.append(String.format(Locale.ROOT, " %16.2f", result.averageUtilization(type)));
+            table.append('\n');
         }
-        return sb.toString();
+        return table.toString();
     }
 }

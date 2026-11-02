@@ -17,18 +17,17 @@ import org.junit.jupiter.api.io.TempDir;
 
 import results.ExperimentResult;
 
-/** Phase 3: one test per use case of the facade. Covers requirement 10. */
 class SimulatorFacadeTest {
 
     private final SimulatorFacade facade = new SimulatorFacade();
 
     @TempDir
-    Path tmp;
+    Path tempFolder;
 
     @Test
     void runningBeforeSettingUpAScenarioIsRefused() {
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> facade.run(n -> { }));
-        assertEquals("Set up a scenario first.", e.getMessage());
+        IllegalStateException refusal = assertThrows(IllegalStateException.class, () -> facade.run(finishedRuns -> { }));
+        assertEquals("Set up a scenario first.", refusal.getMessage());
         assertEquals("none", facade.currentScenarioName());
     }
 
@@ -41,30 +40,30 @@ class SimulatorFacadeTest {
     @Test
     void aWrongScenarioIsReportedAndThePreviousOneIsKept() throws IOException {
         facade.loadScenario(TestScenarios.REAL_WORLD.toString());
-        Properties p = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
-        p.setProperty("name", "Broken");
-        p.setProperty("security.lanes", "0");
-        Path broken = tmp.resolve("broken.properties");
-        try (Writer out = Files.newBufferedWriter(broken)) {
-            p.store(out, null);
+        Properties settings = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
+        settings.setProperty("name", "Broken");
+        settings.setProperty("security.lanes", "0");
+        Path brokenFile = tempFolder.resolve("broken.properties");
+        try (Writer writer = Files.newBufferedWriter(brokenFile)) {
+            settings.store(writer, null);
         }
-        List<String> errors = facade.loadScenario(broken.toString());
-        assertFalse(errors.isEmpty());
+        List<String> problems = facade.loadScenario(brokenFile.toString());
+        assertFalse(problems.isEmpty());
         assertEquals("Real world", facade.currentScenarioName());
     }
 
     @Test
     void resultsCanBeViewedAndSavedAfterARun() throws IOException {
         assertEquals("No results yet. Run the simulation first.", facade.showResults());
-        assertThrows(IllegalStateException.class, () -> facade.saveCsv(tmp.resolve("x.csv").toString()));
+        assertThrows(IllegalStateException.class, () -> facade.saveCsv(tempFolder.resolve("x.csv").toString()));
 
         facade.loadScenario(TestScenarios.REAL_WORLD.toString());
-        ExperimentResult r = facade.run(n -> { });
-        assertEquals(r.toText(), facade.showResults());
+        ExperimentResult result = facade.run(finishedRuns -> { });
+        assertEquals(result.toText(), facade.showResults());
 
-        Path csv = tmp.resolve("real_world.csv");
-        facade.saveCsv(csv.toString());
-        assertEquals(r.toCsv(), Files.readString(csv));
+        Path csvFile = tempFolder.resolve("real_world.csv");
+        facade.saveCsv(csvFile.toString());
+        assertEquals(result.toCsv(), Files.readString(csvFile));
     }
 
     @Test

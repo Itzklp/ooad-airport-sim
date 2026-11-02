@@ -5,7 +5,6 @@ import java.util.List;
 import sim.Distribution;
 import sim.Simulator;
 
-/** The screening lanes and their lines, shared by all airlines, plus the random stops. */
 public class SecurityCheckpoint {
 
     private final List<WaitingLine> lines;
@@ -21,21 +20,20 @@ public class SecurityCheckpoint {
         this.stopTime = stopTime;
     }
 
-    /** Puts a passenger who has finished check-in in one of the screening lines. */
-    public void admit(Passenger p, Simulator sim) {
-        WaitingLine line = lineChoice.choose(lines, sim.rng());
-        p.changeState(PassengerState.WAITING_FOR_SCREENING);
-        line.join(p, sim);
+    public void admit(Passenger passenger, Simulator sim) {
+        WaitingLine chosen = lineChoice.choose(lines, sim.rng());
+        passenger.changeState(PassengerState.WAITING_FOR_SCREENING);
+        chosen.join(passenger, sim);
     }
 
-    /** After screening, stops a set share of passengers for an extra check; the rest leave. */
-    public void afterScreening(Passenger p, Simulator sim) {
+    // A stopped passenger is checked aside, so the screening lane is already free for the next one.
+    public void afterScreening(Passenger passenger, Simulator sim) {
         if (sim.rng().nextDouble() < stopShare) {
-            p.changeState(PassengerState.STOPPED);
+            passenger.changeState(PassengerState.STOPPED);
             double duration = Math.max(0.0, stopTime.sample(sim.rng()));
-            sim.schedule(new StopEndEvent(sim.now() + duration, p));
+            sim.schedule(new StopEndEvent(sim.now() + duration, passenger));
         } else {
-            p.changeState(PassengerState.DEPARTED);
+            passenger.changeState(PassengerState.DEPARTED);
         }
     }
 }

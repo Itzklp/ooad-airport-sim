@@ -4,7 +4,6 @@ import java.util.Map;
 
 import airport.ResourceType;
 
-/** The statistics of one simulated day. */
 public class RunResult {
 
     private final Map<String, WaitStats> waits;              // by line category, in seconds

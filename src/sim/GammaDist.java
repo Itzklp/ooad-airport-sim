@@ -2,10 +2,6 @@ package sim;
 
 import java.util.Random;
 
-/**
- * Gamma distribution, written GAMM(scale, shape) in Arena notation.
- * Sampling uses the method of Marsaglia and Tsang.
- */
 public class GammaDist implements Distribution {
 
     private final double scale;
@@ -20,14 +16,15 @@ public class GammaDist implements Distribution {
     @Override
     public double sample(Random rng) {
         if (shape < 1.0) {
-            // boost: Gamma(a) = Gamma(a + 1) * U^(1/a)
+            // the method below needs shape >= 1, so use Gamma(shape) = Gamma(shape + 1) * U^(1/shape)
             return standardGamma(shape + 1.0, rng) * Math.pow(rng.nextDouble(), 1.0 / shape) * scale;
         }
         return standardGamma(shape, rng) * scale;
     }
 
-    private static double standardGamma(double a, Random rng) {
-        double d = a - 1.0 / 3.0;
+    // Marsaglia and Tsang method; d, c, x, v and u are the names used in their paper
+    private static double standardGamma(double shape, Random rng) {
+        double d = shape - 1.0 / 3.0;
         double c = 1.0 / Math.sqrt(9.0 * d);
         while (true) {
             double x;

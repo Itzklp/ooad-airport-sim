@@ -16,10 +16,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-/** Phase 2: the passenger state diagram, Figure 8(a) of D1. */
 class PassengerStateTest {
 
-    /** Every arrow of Figure 8(a), as {from, to}. */
+    // every arrow of the passenger state diagram, as {from, to}
     private static final List<PassengerState[]> ARROWS = List.of(
             new PassengerState[] {ARRIVED, WAITING_FOR_CHECK_IN},
             new PassengerState[] {WAITING_FOR_CHECK_IN, CHECKING_IN},
@@ -31,14 +30,14 @@ class PassengerStateTest {
 
     @Test
     void everyArrowOfTheDiagramIsAllowed() {
-        for (PassengerState[] a : ARROWS) assertTrue(a[0].canMoveTo(a[1]), a[0] + " -> " + a[1]);
+        for (PassengerState[] arrow : ARROWS) assertTrue(arrow[0].canMoveTo(arrow[1]), arrow[0] + " -> " + arrow[1]);
     }
 
     @Test
     void everyMoveThatIsNotAnArrowIsRefused() {
         for (PassengerState from : PassengerState.values()) {
             for (PassengerState to : PassengerState.values()) {
-                boolean isArrow = ARROWS.stream().anyMatch(a -> a[0] == from && a[1] == to);
+                boolean isArrow = ARROWS.stream().anyMatch(arrow -> arrow[0] == from && arrow[1] == to);
                 assertEquals(isArrow, from.canMoveTo(to), from + " -> " + to);
             }
         }
@@ -51,37 +50,37 @@ class PassengerStateTest {
 
     @Test
     void screeningBeforeCheckInIsRefused() {
-        Passenger p = Fixtures.passenger(1);
-        assertThrows(IllegalStateException.class, () -> p.changeState(BEING_SCREENED));
-        assertEquals(ARRIVED, p.state(), "a refused move leaves the state unchanged");
+        Passenger passenger = Fixtures.passenger(1);
+        assertThrows(IllegalStateException.class, () -> passenger.changeState(BEING_SCREENED));
+        assertEquals(ARRIVED, passenger.state(), "a refused move leaves the state unchanged");
     }
 
     @Test
     void aMoveOutOfDepartedIsRefused() {
-        Passenger p = Fixtures.checkedIn(1);
-        p.changeState(WAITING_FOR_SCREENING);
-        p.changeState(BEING_SCREENED);
-        p.changeState(DEPARTED);
+        Passenger passenger = Fixtures.checkedIn(1);
+        passenger.changeState(WAITING_FOR_SCREENING);
+        passenger.changeState(BEING_SCREENED);
+        passenger.changeState(DEPARTED);
         for (PassengerState next : PassengerState.values()) {
             assertFalse(DEPARTED.canMoveTo(next));
-            assertThrows(IllegalStateException.class, () -> p.changeState(next));
+            assertThrows(IllegalStateException.class, () -> passenger.changeState(next));
         }
     }
 
     @Test
     void theFullPathThroughAStopIsAllowed() {
-        Passenger p = Fixtures.passenger(1);
-        for (PassengerState s : List.of(WAITING_FOR_CHECK_IN, CHECKING_IN, WAITING_FOR_SCREENING,
+        Passenger passenger = Fixtures.passenger(1);
+        for (PassengerState next : List.of(WAITING_FOR_CHECK_IN, CHECKING_IN, WAITING_FOR_SCREENING,
                 BEING_SCREENED, STOPPED, DEPARTED)) {
-            p.changeState(s);
+            passenger.changeState(next);
         }
-        assertEquals(DEPARTED, p.state());
+        assertEquals(DEPARTED, passenger.state());
     }
 
     @Test
     void waitTimeIsMeasuredFromJoiningTheLine() {
-        Passenger p = Fixtures.passenger(1);
-        p.startWaiting(100.0);
-        assertEquals(35.0, p.waitTime(135.0), 1e-9);
+        Passenger passenger = Fixtures.passenger(1);
+        passenger.startWaiting(100.0);
+        assertEquals(35.0, passenger.waitTime(135.0), 1e-9);
     }
 }

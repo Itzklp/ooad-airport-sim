@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import sim.DistributionFactory;
 import sim.Simulator;
 
-/** Phase 2: creating passengers. Covers requirement 3. */
 class PassengerSourceTest {
 
     @Test
@@ -25,7 +24,7 @@ class PassengerSourceTest {
         assertEquals(1, first.id());
         assertEquals(2, second.id());
         assertEquals(500.0, first.arrivalTime());
-        assertEquals(List.of(first, second), recorder.arrived, "the listener hears about each passenger");
+        assertEquals(List.of(first, second), recorder.arrived);
     }
 
     @Test
@@ -34,12 +33,12 @@ class PassengerSourceTest {
         CarrierGroup big = new CarrierGroup("Big", 0.75, 0);
         PassengerSource source = new PassengerSource(Fixtures.constant(1), List.of(small, big));
         Simulator sim = new Simulator(8);
-        int n = 20_000;
-        int toSmall = 0;
-        for (int i = 0; i < n; i++) {
-            if (source.next(sim).group() == small) toSmall++;
+        int total = 20_000;
+        int flyingSmall = 0;
+        for (int i = 0; i < total; i++) {
+            if (source.next(sim).group() == small) flyingSmall++;
         }
-        assertEquals(0.25, toSmall / (double) n, 0.01);
+        assertEquals(0.25, flyingSmall / (double) total, 0.01);
     }
 
     @Test
@@ -62,24 +61,24 @@ class PassengerSourceTest {
         Simulator sim = new Simulator(9);
         PassengerSource source = new PassengerSource(DistributionFactory.parse("-0.001 + GAMM(39.2, 1)"),
                 List.of(new CarrierGroup("A", 1, 0)));
-        double sum = 0;
-        int n = 50_000;
-        for (int i = 0; i < n; i++) {
+        double totalGap = 0;
+        int draws = 50_000;
+        for (int i = 0; i < draws; i++) {
             double gap = source.nextArrivalTime(sim) - sim.now();
             assertTrue(gap >= 0);
-            sum += gap;
+            totalGap += gap;
         }
-        assertEquals(39.2, sum / n, 0.6, "mean gap is about 39.2 s, i.e. about 2204 passengers a day");
+        assertEquals(39.2, totalGap / draws, 0.6, "mean gap is about 39.2 s, i.e. about 2204 passengers a day");
     }
 
     private static double kioskFraction(double kioskShare) {
         PassengerSource source = new PassengerSource(Fixtures.constant(1), List.of(new CarrierGroup("A", 1, kioskShare)));
         Simulator sim = new Simulator(10);
-        int n = 10_000;
-        int kiosk = 0;
-        for (int i = 0; i < n; i++) {
-            if (source.next(sim).usesKiosk()) kiosk++;
+        int total = 10_000;
+        int usingKiosk = 0;
+        for (int i = 0; i < total; i++) {
+            if (source.next(sim).usesKiosk()) usingKiosk++;
         }
-        return kiosk / (double) n;
+        return usingKiosk / (double) total;
     }
 }

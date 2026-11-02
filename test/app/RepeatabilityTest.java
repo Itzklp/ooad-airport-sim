@@ -11,16 +11,15 @@ import org.junit.jupiter.api.Test;
 
 import results.ExperimentResult;
 
-/** Phase 3: repeatable runs. Covers business rule 6 and requirement 8. */
 class RepeatabilityTest {
 
     private final ExperimentRunner runner = new ExperimentRunner(new AirportBuilder());
 
     private ExperimentResult run(long seed, int runs) throws IOException {
-        Properties p = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
-        p.setProperty("seed", Long.toString(seed));
-        p.setProperty("runs", Integer.toString(runs));
-        return runner.run(new Scenario(p), n -> { });
+        Properties settings = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
+        settings.setProperty("seed", Long.toString(seed));
+        settings.setProperty("runs", Integer.toString(runs));
+        return runner.run(new Scenario(settings), finishedRuns -> { });
     }
 
     @Test
@@ -33,35 +32,38 @@ class RepeatabilityTest {
         assertNotEquals(run(2026, 5).toCsv(), run(2027, 5).toCsv());
     }
 
-    /** Run 2 of an experiment with seed 2026 uses seed 2027 and must not be affected by run 1. */
+    // Run 2 of an experiment with seed 2026 uses seed 2027, and must not be affected by run 1.
     @Test
     void eachRunStartsFreshWithItsOwnSeed() throws IOException {
-        ExperimentResult both = run(2026, 2);
-        ExperimentResult first = run(2026, 1);
-        ExperimentResult second = run(2027, 1);
-        for (String g : new String[] {"American/Continental", "Southwest", "US Airways"}) {
-            assertEquals((first.averageArrivals(g) + second.averageArrivals(g)) / 2, both.averageArrivals(g), 1e-9, g);
+        ExperimentResult bothRuns = run(2026, 2);
+        ExperimentResult firstAlone = run(2026, 1);
+        ExperimentResult secondAlone = run(2027, 1);
+        for (String group : new String[] {"American/Continental", "Southwest", "US Airways"}) {
+            double expected = (firstAlone.averageArrivals(group) + secondAlone.averageArrivals(group)) / 2;
+            assertEquals(expected, bothRuns.averageArrivals(group), 1e-9, group);
         }
-        for (String c : both.categories()) {
-            assertEquals((first.averageWait(c) + second.averageWait(c)) / 2, both.averageWait(c), 1e-9, c);
+        for (String category : bothRuns.categories()) {
+            double expected = (firstAlone.averageWait(category) + secondAlone.averageWait(category)) / 2;
+            assertEquals(expected, bothRuns.averageWait(category), 1e-9, category);
         }
     }
 
     @Test
     void theRunnerDoesTheNumberOfRunsAndReportsProgress() throws IOException {
-        int[] last = {0};
-        Properties p = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
-        p.setProperty("runs", "7");
-        ExperimentResult r = runner.run(new Scenario(p), n -> last[0] = n);
-        assertEquals(7, r.runCount());
-        assertEquals(7, last[0]);
+        int[] lastReported = {0};
+        Properties settings = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
+        settings.setProperty("runs", "7");
+        ExperimentResult result = runner.run(new Scenario(settings), finishedRuns -> lastReported[0] = finishedRuns);
+        assertEquals(7, result.runCount());
+        assertEquals(7, lastReported[0]);
     }
 
     @Test
     void theRunnerRefusesAWrongScenario() throws IOException {
-        Properties p = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
-        p.setProperty("hours", "-1");
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> runner.run(new Scenario(p), n -> { }));
-        assertEquals("hours must be greater than 0", e.getMessage());
+        Properties settings = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
+        settings.setProperty("hours", "-1");
+        IllegalArgumentException refusal = assertThrows(IllegalArgumentException.class,
+                () -> runner.run(new Scenario(settings), finishedRuns -> { }));
+        assertEquals("hours must be greater than 0", refusal.getMessage());
     }
 }

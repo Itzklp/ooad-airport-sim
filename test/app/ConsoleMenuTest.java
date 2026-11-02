@@ -12,11 +12,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Phase 3: the console menu, driven the way a user would drive it. */
 class ConsoleMenuTest {
 
-    private final PrintStream realOut = System.out;
-    private final InputStream realIn = System.in;
+    private final PrintStream realOutput = System.out;
+    private final InputStream realInput = System.in;
     private final ByteArrayOutputStream captured = new ByteArrayOutputStream();
 
     @BeforeEach
@@ -26,8 +25,8 @@ class ConsoleMenuTest {
 
     @AfterEach
     void restore() {
-        System.setOut(realOut);
-        System.setIn(realIn);
+        System.setOut(realOutput);
+        System.setIn(realInput);
     }
 
     private String output() {
@@ -57,8 +56,8 @@ class ConsoleMenuTest {
 
     @Test
     void theMenuLoadsRunsAndExits() {
-        String keys = "2\n1\nscenarios/real_world.properties\n2\n9\n0\n";
-        System.setIn(new ByteArrayInputStream(keys.getBytes(StandardCharsets.UTF_8)));
+        String keystrokes = "2\n1\nscenarios/real_world.properties\n2\n9\n0\n";
+        System.setIn(new ByteArrayInputStream(keystrokes.getBytes(StandardCharsets.UTF_8)));
         ConsoleMenu.main(new String[0]);
         assertTrue(output().contains("Error: Set up a scenario first."), "run before load: " + output());
         assertTrue(output().contains("(scenario: Real world)"), output());

@@ -5,18 +5,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * The console user interface. It only reads input and prints output;
- * all the work is passed to SimulatorFacade.
- *
- * Usage:  java app.ConsoleMenu                       (interactive menu)
- *         java app.ConsoleMenu run FILE              (run one scenario and print results)
- *         java app.ConsoleMenu compare FILE FILE ... (run and compare scenarios)
- */
+// Usage:  java app.ConsoleMenu                       (interactive menu)
+//         java app.ConsoleMenu run FILE              (run one scenario and print the results)
+//         java app.ConsoleMenu compare FILE FILE ... (run and compare scenarios)
 public class ConsoleMenu {
 
     private final SimulatorFacade facade = new SimulatorFacade();
-    private final Scanner in = new Scanner(System.in);
+    private final Scanner input = new Scanner(System.in);
 
     public static void main(String[] args) {
         ConsoleMenu menu = new ConsoleMenu();
@@ -40,7 +35,7 @@ public class ConsoleMenu {
             System.out.println("1. Set up a scenario   2. Run the simulation   3. View results");
             System.out.println("4. Save results to CSV 5. Compare scenarios    0. Exit");
             System.out.print("> ");
-            String choice = in.nextLine().trim();
+            String choice = input.nextLine().trim();
             try {
                 switch (choice) {
                     case "1" -> load(ask("Scenario file: "));
@@ -67,24 +62,23 @@ public class ConsoleMenu {
     }
 
     private void load(String file) throws IOException {
-        List<String> errors = facade.loadScenario(file);
-        if (errors.isEmpty()) {
+        List<String> problems = facade.loadScenario(file);
+        if (problems.isEmpty()) {
             System.out.println("Loaded scenario: " + facade.currentScenarioName());
         } else {
             System.out.println("The scenario has problems:");
-            errors.forEach(e -> System.out.println("  - " + e));
+            problems.forEach(problem -> System.out.println("  - " + problem));
         }
     }
 
-    /** Runs the current scenario, shows the progress after each run and the summary at the end. */
     private void runCurrent() {
-        facade.run(n -> System.out.print("\rRun " + n + " finished"));
+        facade.run(finishedRuns -> System.out.print("\rRun " + finishedRuns + " finished"));
         System.out.println();
         System.out.println(facade.showResults());
     }
 
     private String ask(String prompt) {
         System.out.print(prompt);
-        return in.nextLine().trim();
+        return input.nextLine().trim();
     }
 }

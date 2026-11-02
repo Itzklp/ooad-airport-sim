@@ -4,7 +4,6 @@ import java.util.List;
 
 import sim.Simulator;
 
-/** The kiosks, counters and their lines for one airline group. */
 public class CheckInArea {
 
     private final CarrierGroup group;
@@ -20,12 +19,11 @@ public class CheckInArea {
         this.lineChoice = lineChoice;
     }
 
-    /** Puts a newly arrived passenger in a kiosk line or a counter line. */
-    public void admit(Passenger p, Simulator sim) {
-        List<WaitingLine> lines = p.usesKiosk() ? kioskLines : counterLines;
-        WaitingLine line = lineChoice.choose(lines, sim.rng());
-        p.changeState(PassengerState.WAITING_FOR_CHECK_IN);
-        line.join(p, sim);
+    public void admit(Passenger passenger, Simulator sim) {
+        List<WaitingLine> choices = passenger.usesKiosk() ? kioskLines : counterLines;
+        WaitingLine chosen = lineChoice.choose(choices, sim.rng());
+        passenger.changeState(PassengerState.WAITING_FOR_CHECK_IN);
+        chosen.join(passenger, sim);
     }
 
     public CarrierGroup group() {

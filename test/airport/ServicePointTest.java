@@ -11,10 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import sim.Simulator;
 
-/**
- * Phase 2: service points. Covers business rule 1 (one passenger at a time)
- * and the service point state diagram, Figure 8(b) of D1.
- */
 class ServicePointTest {
 
     private Simulator sim;
@@ -33,10 +29,10 @@ class ServicePointTest {
     }
 
     private Passenger join(int id) {
-        Passenger p = Fixtures.passenger(id);
-        p.changeState(PassengerState.WAITING_FOR_CHECK_IN);
-        line.join(p, sim);
-        return p;
+        Passenger passenger = Fixtures.passenger(id);
+        passenger.changeState(PassengerState.WAITING_FOR_CHECK_IN);
+        line.join(passenger, sim);
+        return passenger;
     }
 
     @Test
@@ -46,8 +42,8 @@ class ServicePointTest {
         sim.run(5);
         assertEquals(PassengerState.CHECKING_IN, first.state());
         assertEquals(PassengerState.WAITING_FOR_CHECK_IN, second.state());
-        counter.startNext(sim);   // asking a busy point to start again changes nothing
-        assertEquals(PassengerState.WAITING_FOR_CHECK_IN, second.state());
+        counter.startNext(sim);
+        assertEquals(PassengerState.WAITING_FOR_CHECK_IN, second.state(), "a busy point does not start another service");
         assertEquals(1, line.length());
     }
 
@@ -64,7 +60,7 @@ class ServicePointTest {
     void busyStaysBusyWhenTheLineIsNotEmpty() {
         join(1);
         Passenger second = join(2);
-        sim.run(10);   // the first service ends at exactly 10
+        sim.run(10);
         assertTrue(counter.isBusy(), "Busy -> Busy: the next passenger is taken at once");
         assertEquals(PassengerState.CHECKING_IN, second.state());
         sim.run(25);
@@ -79,7 +75,7 @@ class ServicePointTest {
         assertEquals(15.0, counter.busyTime(15), 1e-9, "includes the service still in progress");
         sim.run(50);
         assertEquals(20.0, counter.busyTime(50), 1e-9, "two services of 10 s");
-        sim.schedule(Fixtures.at(60, s -> join(3)));
+        sim.schedule(Fixtures.at(60, now -> join(3)));
         sim.run(65);
         assertEquals(25.0, counter.busyTime(65), 1e-9, "idle time between 20 and 60 is not counted");
     }
@@ -96,29 +92,29 @@ class ServicePointTest {
 
     @Test
     void aCheckInPointSendsThePassengerToSecurity() {
-        Passenger p = join(1);
+        Passenger passenger = join(1);
         sim.run(10);
-        assertEquals(PassengerState.BEING_SCREENED, p.state(), "the security lane was free");
+        assertEquals(PassengerState.BEING_SCREENED, passenger.state(), "the security lane was free");
         sim.run(20);
-        assertEquals(PassengerState.DEPARTED, p.state());
+        assertEquals(PassengerState.DEPARTED, passenger.state());
     }
 
     @Test
     void aNegativeSampledTimeCountsAsZero() {
-        WaitingLine l = new WaitingLine("Line", "x");
-        new CheckInPoint("Instant", ResourceType.SELF_CHECK_IN, Fixtures.constant(-5), l, Fixtures.fastSecurity());
-        Passenger p = Fixtures.passenger(1);
-        p.changeState(PassengerState.WAITING_FOR_CHECK_IN);
-        l.join(p, sim);
+        WaitingLine instantLine = new WaitingLine("Line", "x");
+        new CheckInPoint("Instant", ResourceType.SELF_CHECK_IN, Fixtures.constant(-5), instantLine, Fixtures.fastSecurity());
+        Passenger passenger = Fixtures.passenger(1);
+        passenger.changeState(PassengerState.WAITING_FOR_CHECK_IN);
+        instantLine.join(passenger, sim);
         sim.run(0);
-        assertEquals(PassengerState.BEING_SCREENED, p.state(), "service ended at time 0, not in the past");
+        assertEquals(PassengerState.BEING_SCREENED, passenger.state(), "service ended at time 0, not in the past");
     }
 
     @Test
     void theResourceTypeIsKept() {
         assertEquals(ResourceType.MANNED_CHECK_IN, counter.type());
-        WaitingLine l = new WaitingLine("Security", "Security");
-        SecurityCheckpoint cp = new SecurityCheckpoint(List.of(l), new RandomSplit(), 0, Fixtures.constant(0));
-        assertEquals(ResourceType.SECURITY, new ScreeningLane("Lane", Fixtures.constant(1), l, cp).type());
+        WaitingLine securityLine = new WaitingLine("Security", "Security");
+        SecurityCheckpoint checkpoint = new SecurityCheckpoint(List.of(securityLine), new RandomSplit(), 0, Fixtures.constant(0));
+        assertEquals(ResourceType.SECURITY, new ScreeningLane("Lane", Fixtures.constant(1), securityLine, checkpoint).type());
     }
 }

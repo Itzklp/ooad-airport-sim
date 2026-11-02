@@ -12,44 +12,42 @@ import airport.ServicePoint;
 import airport.SimListener;
 import airport.WaitingLine;
 
-/** Listens to one run and collects waiting times and passenger counts. (Observer) */
 public class StatisticsCollector implements SimListener {
 
     private final Map<String, WaitStats> waits = new LinkedHashMap<>();
     private final Map<String, Integer> arrivals = new LinkedHashMap<>();
 
     @Override
-    public void passengerArrived(Passenger p) {
-        arrivals.merge(p.group().name(), 1, Integer::sum);
+    public void passengerArrived(Passenger passenger) {
+        arrivals.merge(passenger.group().name(), 1, Integer::sum);
     }
 
     @Override
-    public void waitEnded(Passenger p, WaitingLine line, double wait) {
-        waits.computeIfAbsent(line.category(), k -> new WaitStats()).add(wait);
+    public void waitEnded(Passenger passenger, WaitingLine line, double wait) {
+        waits.computeIfAbsent(line.category(), category -> new WaitStats()).add(wait);
     }
 
-    /** Builds the result of the run. Utilization comes from the service points' own busy times. */
     public RunResult summary(Airport airport, double endTime) {
-        Map<String, WaitStats> allWaits = new LinkedHashMap<>();
+        Map<String, WaitStats> waitsByLine = new LinkedHashMap<>();
         for (WaitingLine line : airport.lines()) {
-            allWaits.put(line.category(), waits.getOrDefault(line.category(), new WaitStats()));
+            waitsByLine.put(line.category(), waits.getOrDefault(line.category(), new WaitStats()));
         }
 
-        Map<ResourceType, Double> busy = new EnumMap<>(ResourceType.class);
-        Map<ResourceType, Integer> count = new EnumMap<>(ResourceType.class);
-        for (ServicePoint sp : airport.servicePoints()) {
-            busy.merge(sp.type(), sp.busyTime(endTime), Double::sum);
-            count.merge(sp.type(), 1, Integer::sum);
+        Map<ResourceType, Double> busySeconds = new EnumMap<>(ResourceType.class);
+        Map<ResourceType, Integer> pointCount = new EnumMap<>(ResourceType.class);
+        for (ServicePoint point : airport.servicePoints()) {
+            busySeconds.merge(point.type(), point.busyTime(endTime), Double::sum);
+            pointCount.merge(point.type(), 1, Integer::sum);
         }
         Map<ResourceType, Double> utilization = new EnumMap<>(ResourceType.class);
-        for (ResourceType type : busy.keySet()) {
-            utilization.put(type, busy.get(type) / (count.get(type) * endTime));
+        for (ResourceType type : busySeconds.keySet()) {
+            utilization.put(type, busySeconds.get(type) / (pointCount.get(type) * endTime));
         }
 
-        Map<String, Integer> allArrivals = new LinkedHashMap<>();
-        for (CarrierGroup g : airport.groups()) {
-            allArrivals.put(g.name(), arrivals.getOrDefault(g.name(), 0));
+        Map<String, Integer> arrivalsByGroup = new LinkedHashMap<>();
+        for (CarrierGroup group : airport.groups()) {
+            arrivalsByGroup.put(group.name(), arrivals.getOrDefault(group.name(), 0));
         }
-        return new RunResult(allWaits, utilization, allArrivals);
+        return new RunResult(waitsByLine, utilization, arrivalsByGroup);
     }
 }

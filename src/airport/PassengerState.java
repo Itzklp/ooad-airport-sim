@@ -1,6 +1,5 @@
 package airport;
 
-/** The states of a passenger (see the state diagram) and the moves allowed between them. */
 public enum PassengerState {
     ARRIVED,
     WAITING_FOR_CHECK_IN,
@@ -10,7 +9,7 @@ public enum PassengerState {
     STOPPED,
     DEPARTED;
 
-    /** True if the state diagram has an arrow from this state to next. */
+    // the arrows of the passenger state diagram; every other move is refused
     public boolean canMoveTo(PassengerState next) {
         return switch (this) {
             case ARRIVED -> next == WAITING_FOR_CHECK_IN;

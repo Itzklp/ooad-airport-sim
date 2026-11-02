@@ -3,7 +3,6 @@ package airport;
 import java.util.List;
 import java.util.Map;
 
-/** The whole airport model for one run: airlines, passenger source, check-in areas and security. */
 public class Airport {
 
     private final String name;
@@ -42,7 +41,6 @@ public class Airport {
         return groups;
     }
 
-    /** All waiting lines, in the order they were built (check-in first, then security). */
     public List<WaitingLine> lines() {
         return lines;
     }

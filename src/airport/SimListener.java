@@ -1,12 +1,8 @@
 package airport;
 
-/**
- * Anything that wants to hear what happens in the airport model. (Observer pattern)
- * The interface belongs to the model, so the model never depends on the statistics code.
- */
 public interface SimListener {
 
-    void passengerArrived(Passenger p);
+    void passengerArrived(Passenger passenger);
 
-    void waitEnded(Passenger p, WaitingLine line, double wait);
+    void waitEnded(Passenger passenger, WaitingLine line, double wait);
 }

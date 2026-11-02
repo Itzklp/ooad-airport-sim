@@ -3,7 +3,6 @@ package airport;
 import sim.Distribution;
 import sim.Simulator;
 
-/** A self check-in kiosk or a manned counter. After check-in the passenger goes to security. */
 public class CheckInPoint extends ServicePoint {
 
     private final SecurityCheckpoint security;
@@ -20,7 +19,7 @@ public class CheckInPoint extends ServicePoint {
     }
 
     @Override
-    protected void sendOn(Passenger p, Simulator sim) {
-        security.admit(p, sim);
+    protected void sendOn(Passenger passenger, Simulator sim) {
+        security.admit(passenger, sim);
     }
 }

@@ -1,11 +1,10 @@
 package airport;
 
-/** One of the paper's airline groups: American/Continental, Southwest or US Airways. */
 public class CarrierGroup {
 
     private final String name;
-    private final double share;       // share of all arriving passengers
-    private final double kioskShare;  // share of this group's passengers who use self check-in
+    private final double share;
+    private final double kioskShare;   // share of this airline's passengers who use self check-in
 
     public CarrierGroup(String name, double share, double kioskShare) {
         this.name = name;

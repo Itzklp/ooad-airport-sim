@@ -6,12 +6,6 @@ import java.util.List;
 import sim.Distribution;
 import sim.Simulator;
 
-/**
- * Anything that serves one passenger at a time from one waiting line:
- * a kiosk, a counter or a screening lane.
- * startNext() and finishService() fix the steps of a service; subclasses fill in
- * servingState() and sendOn(). (Template Method pattern)
- */
 public abstract class ServicePoint {
 
     private final String name;
@@ -32,44 +26,40 @@ public abstract class ServicePoint {
         line.addPoint(this);
     }
 
-    public void addListener(SimListener l) {
-        listeners.add(l);
+    public void addListener(SimListener listener) {
+        listeners.add(listener);
     }
 
-    /** Takes the next passenger from the line and schedules the end of the service. */
     public final void startNext(Simulator sim) {
         if (current != null) return;
-        Passenger p = line.takeNext();
-        if (p == null) return;
-        current = p;
+        Passenger passenger = line.takeNext();
+        if (passenger == null) return;
+        current = passenger;
         busySince = sim.now();
-        p.changeState(servingState());
-        double wait = p.waitTime(sim.now());
-        for (SimListener l : listeners) l.waitEnded(p, line, wait);
+        passenger.changeState(servingState());
+        double wait = passenger.waitTime(sim.now());
+        for (SimListener listener : listeners) listener.waitEnded(passenger, line, wait);
         double duration = Math.max(0.0, serviceTime.sample(sim.rng()));
         sim.schedule(new ServiceEndEvent(sim.now() + duration, this));
     }
 
-    /** Ends the current service, sends the passenger on, and serves the next one in the line. */
     public final void finishService(Simulator sim) {
-        Passenger p = current;
+        Passenger finished = current;
         current = null;
         busyTime += sim.now() - busySince;
-        sendOn(p, sim);
+        sendOn(finished, sim);
         line.dispatch(sim);
     }
 
-    /** State the passenger is in while being served here. */
     protected abstract PassengerState servingState();
 
-    /** Where the passenger goes after the service. */
-    protected abstract void sendOn(Passenger p, Simulator sim);
+    protected abstract void sendOn(Passenger passenger, Simulator sim);
 
     public boolean isBusy() {
         return current != null;
     }
 
-    /** Total busy time up to now, including a service still in progress. */
+    // includes a service still in progress
     public double busyTime(double now) {
         return busyTime + (current != null ? now - busySince : 0.0);
     }

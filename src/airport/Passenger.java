@@ -1,6 +1,5 @@
 package airport;
 
-/** A departing passenger moving through check-in and security. */
 public class Passenger {
 
     private final int id;
@@ -17,7 +16,6 @@ public class Passenger {
         this.usesKiosk = usesKiosk;
     }
 
-    /** Moves to the next state; refuses any move that the state diagram does not allow. */
     public void changeState(PassengerState next) {
         if (!state.canMoveTo(next)) {
             throw new IllegalStateException("Passenger " + id + " cannot go from " + state + " to " + next);
@@ -25,12 +23,10 @@ public class Passenger {
         state = next;
     }
 
-    /** Remembers when the passenger joined a line, so the wait can be measured later. */
     public void startWaiting(double time) {
         joinedLineAt = time;
     }
 
-    /** How long the passenger has waited in the current line. */
     public double waitTime(double now) {
         return now - joinedLineAt;
     }

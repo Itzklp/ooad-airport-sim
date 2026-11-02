@@ -9,7 +9,6 @@ import results.ExperimentResult;
 import results.StatisticsCollector;
 import sim.Simulator;
 
-/** Runs a scenario many times. Every run gets a new Simulator, airport and collector. */
 public class ExperimentRunner {
 
     private final AirportBuilder builder;
@@ -18,24 +17,21 @@ public class ExperimentRunner {
         this.builder = builder;
     }
 
-    /**
-     * Runs all the runs of the scenario. The progress callback is told after each run.
-     * Throws IllegalArgumentException listing the problems if the scenario is not valid.
-     */
-    public ExperimentResult run(Scenario s, IntConsumer progress) {
-        List<String> errors = builder.check(s);
-        if (!errors.isEmpty()) throw new IllegalArgumentException(String.join("\n", errors));
+    public ExperimentResult run(Scenario scenario, IntConsumer progress) {
+        List<String> problems = builder.check(scenario);
+        if (!problems.isEmpty()) throw new IllegalArgumentException(String.join("\n", problems));
 
-        ExperimentResult result = new ExperimentResult(s.name(), s.note());
-        double endTime = s.hours() * 3600.0;   // all times are in seconds
-        for (int i = 0; i < s.runs(); i++) {
-            Simulator sim = new Simulator(s.seed() + i);
+        ExperimentResult result = new ExperimentResult(scenario.name(), scenario.note());
+        double endTime = scenario.hours() * 3600.0;   // all times in the model are in seconds
+        for (int runIndex = 0; runIndex < scenario.runs(); runIndex++) {
+            // every run gets its own seed, clock, airport and collector, so runs cannot affect each other
+            Simulator sim = new Simulator(scenario.seed() + runIndex);
             StatisticsCollector stats = new StatisticsCollector();
-            Airport airport = builder.build(s, stats);
+            Airport airport = builder.build(scenario, stats);
             sim.schedule(new ArrivalEvent(airport.source().nextArrivalTime(sim), airport));
             sim.run(endTime);
             result.add(stats.summary(airport, endTime));
-            progress.accept(i + 1);
+            progress.accept(runIndex + 1);
         }
         return result;
     }

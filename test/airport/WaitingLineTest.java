@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import sim.Simulator;
 
-/** Phase 2: waiting lines. Covers business rule 2 (a passenger stays in the line they joined). */
 class WaitingLineTest {
 
     private Simulator sim;
@@ -26,16 +25,16 @@ class WaitingLineTest {
         recorder = new Fixtures.Recorder();
     }
 
-    private CheckInPoint counter(String name, double time, WaitingLine line) {
-        CheckInPoint c = new CheckInPoint(name, ResourceType.MANNED_CHECK_IN, Fixtures.constant(time), line, security);
-        c.addListener(recorder);
-        return c;
+    private CheckInPoint counter(String name, double serviceSeconds, WaitingLine line) {
+        CheckInPoint counter = new CheckInPoint(name, ResourceType.MANNED_CHECK_IN, Fixtures.constant(serviceSeconds), line, security);
+        counter.addListener(recorder);
+        return counter;
     }
 
     private static Passenger waiting(int id) {
-        Passenger p = Fixtures.passenger(id);
-        p.changeState(PassengerState.WAITING_FOR_CHECK_IN);
-        return p;
+        Passenger passenger = Fixtures.passenger(id);
+        passenger.changeState(PassengerState.WAITING_FOR_CHECK_IN);
+        return passenger;
     }
 
     @Test
@@ -50,27 +49,27 @@ class WaitingLineTest {
 
     @Test
     void aPassengerDoesNotChangeLine() {
-        WaitingLine slow = new WaitingLine("Slow line", "slow");
-        WaitingLine fast = new WaitingLine("Fast line", "fast");
-        counter("Slow counter", 100, slow);
-        CheckInPoint fastCounter = counter("Fast counter", 1, fast);
-        for (int id = 1; id <= 3; id++) slow.join(waiting(id), sim);
+        WaitingLine slowLine = new WaitingLine("Slow line", "slow");
+        WaitingLine fastLine = new WaitingLine("Fast line", "fast");
+        counter("Slow counter", 100, slowLine);
+        CheckInPoint fastCounter = counter("Fast counter", 1, fastLine);
+        for (int id = 1; id <= 3; id++) slowLine.join(waiting(id), sim);
         sim.run(50);
-        assertEquals(2, slow.length(), "the two passengers behind stay in the slow line");
-        assertEquals(0, fast.length());
+        assertEquals(2, slowLine.length(), "the two passengers behind stay in the slow line");
+        assertEquals(0, fastLine.length());
         assertFalse(fastCounter.isBusy(), "the free counter of the other line does not take them");
     }
 
     @Test
     void oneLineFeedingTwoPointsServesTwoPassengersAtOnce() {
-        WaitingLine line = new WaitingLine("Shared line", "shared");
-        CheckInPoint a = counter("Counter 1", 10, line);
-        CheckInPoint b = counter("Counter 2", 10, line);
-        for (int id = 1; id <= 3; id++) line.join(waiting(id), sim);
+        WaitingLine sharedLine = new WaitingLine("Shared line", "shared");
+        CheckInPoint first = counter("Counter 1", 10, sharedLine);
+        CheckInPoint second = counter("Counter 2", 10, sharedLine);
+        for (int id = 1; id <= 3; id++) sharedLine.join(waiting(id), sim);
         sim.run(5);
-        assertTrue(a.isBusy());
-        assertTrue(b.isBusy());
-        assertEquals(1, line.length());
+        assertTrue(first.isBusy());
+        assertTrue(second.isBusy());
+        assertEquals(1, sharedLine.length());
         sim.run(100);
         assertEquals(List.of(0.0, 0.0, 10.0), recorder.waits.stream().map(Fixtures.Wait::seconds).toList());
     }
@@ -80,7 +79,7 @@ class WaitingLineTest {
         WaitingLine line = new WaitingLine("Counter line", "counters");
         counter("Counter 1", 10, line);
         line.join(waiting(1), sim);
-        sim.schedule(Fixtures.at(7, s -> line.join(waiting(2), s)));
+        sim.schedule(Fixtures.at(7, now -> line.join(waiting(2), now)));
         sim.run(100);
         assertEquals(3.0, recorder.waits.get(1).seconds(), 1e-9, "joined at 7, served at 10");
     }

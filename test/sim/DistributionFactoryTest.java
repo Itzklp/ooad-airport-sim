@@ -11,27 +11,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-/** Phase 1: the factory reads the paper's Arena notation and refuses bad text with a readable message. */
 class DistributionFactoryTest {
 
     @Test
     void mannedCheckInFormulaBecomesShiftedWithMean114() {
-        Distribution d = DistributionFactory.parse("54 + EXPO(60)");
-        assertInstanceOf(Shifted.class, d);
-        assertEquals(114.0, d.mean(), 1e-9);
+        Distribution manned = DistributionFactory.parse("54 + EXPO(60)");
+        assertInstanceOf(Shifted.class, manned);
+        assertEquals(114.0, manned.mean(), 1e-9);
     }
 
     @Test
     void arrivalFormulaWithNegativeOffsetIsRead() {
-        Distribution d = DistributionFactory.parse("-0.001 + GAMM(39.2, 1)");
-        assertInstanceOf(Shifted.class, d);
-        assertEquals(39.199, d.mean(), 1e-9);
+        Distribution arrival = DistributionFactory.parse("-0.001 + GAMM(39.2, 1)");
+        assertInstanceOf(Shifted.class, arrival);
+        assertEquals(39.199, arrival.mean(), 1e-9);
     }
 
     @Test
     void weibullFormulaIsRead() {
-        Distribution d = DistributionFactory.parse("60 + WEIB(40, 1.5)");
-        assertEquals(60 + 36.10981171803735, d.mean(), 1e-9);
+        Distribution selfCheckIn = DistributionFactory.parse("60 + WEIB(40, 1.5)");
+        assertEquals(60 + 36.10981171803735, selfCheckIn.mean(), 1e-9);
     }
 
     @Test
@@ -42,19 +41,19 @@ class DistributionFactoryTest {
 
     @Test
     void extraSpacesAreAllowed() {
-        Distribution d = DistributionFactory.parse("  GAMM( 5 , 3 )  ");
-        assertInstanceOf(GammaDist.class, d);
-        assertEquals(15.0, d.mean(), 1e-9);
+        Distribution gamma = DistributionFactory.parse("  GAMM( 5 , 3 )  ");
+        assertInstanceOf(GammaDist.class, gamma);
+        assertEquals(15.0, gamma.mean(), 1e-9);
     }
 
-    /** GAMM(5, 3) and GAMM(3, 5) have the same mean, so compare samples to be sure the order is scale, shape. */
+    // GAMM(5, 3) and GAMM(3, 5) have the same mean, so samples are compared to check the order is scale, shape
     @Test
     void parameterOrderIsScaleThenShape() {
         Distribution parsed = DistributionFactory.parse("GAMM(5, 3)");
         Distribution direct = new GammaDist(5, 3);
-        Random a = new Random(3);
-        Random b = new Random(3);
-        for (int i = 0; i < 100; i++) assertEquals(direct.sample(a), parsed.sample(b));
+        Random first = new Random(3);
+        Random second = new Random(3);
+        for (int i = 0; i < 100; i++) assertEquals(direct.sample(first), parsed.sample(second));
     }
 
     @ParameterizedTest(name = "\"{0}\" is refused")
@@ -70,13 +69,13 @@ class DistributionFactoryTest {
             "'GAMM(0, 0)',    greater than 0"
     })
     void badTextIsRefusedWithAClearMessage(String text, String expectedInMessage) {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DistributionFactory.parse(text));
-        assertTrue(e.getMessage().contains(expectedInMessage), e.getMessage());
+        IllegalArgumentException refusal = assertThrows(IllegalArgumentException.class, () -> DistributionFactory.parse(text));
+        assertTrue(refusal.getMessage().contains(expectedInMessage), refusal.getMessage());
     }
 
     @Test
     void missingTextIsRefused() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> DistributionFactory.parse(null));
-        assertTrue(e.getMessage().contains("no distribution"), e.getMessage());
+        IllegalArgumentException refusal = assertThrows(IllegalArgumentException.class, () -> DistributionFactory.parse(null));
+        assertTrue(refusal.getMessage().contains("no distribution"), refusal.getMessage());
     }
 }

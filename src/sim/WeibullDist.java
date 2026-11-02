@@ -2,7 +2,6 @@ package sim;
 
 import java.util.Random;
 
-/** Weibull distribution, written WEIB(scale, shape) in Arena notation. */
 public class WeibullDist implements Distribution {
 
     private final double scale;
@@ -24,17 +23,17 @@ public class WeibullDist implements Distribution {
         return scale * gammaFunction(1.0 + 1.0 / shape);
     }
 
-    /** Lanczos approximation of the gamma function, needed only for mean(). */
-    private static double gammaFunction(double x) {
-        double[] g = {0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+    // Lanczos approximation of the gamma function
+    private static double gammaFunction(double value) {
+        double[] coefficients = {0.99999999999980993, 676.5203681218851, -1259.1392167224028,
                 771.32342877765313, -176.61502916214059, 12.507343278686905,
                 -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7};
-        if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gammaFunction(1.0 - x));
-        x -= 1.0;
-        double a = g[0];
-        double t = x + 7.5;
-        for (int i = 1; i < 9; i++) a += g[i] / (x + i);
-        return Math.sqrt(2 * Math.PI) * Math.pow(t, x + 0.5) * Math.exp(-t) * a;
+        if (value < 0.5) return Math.PI / (Math.sin(Math.PI * value) * gammaFunction(1.0 - value));
+        value -= 1.0;
+        double sum = coefficients[0];
+        double shifted = value + 7.5;
+        for (int i = 1; i < coefficients.length; i++) sum += coefficients[i] / (value + i);
+        return Math.sqrt(2 * Math.PI) * Math.pow(shifted, value + 0.5) * Math.exp(-shifted) * sum;
     }
 
     @Override

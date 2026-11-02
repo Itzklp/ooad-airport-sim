@@ -2,7 +2,6 @@ package sim;
 
 import java.util.Random;
 
-/** Exponential distribution, written EXPO(mean) in the paper's Arena notation. */
 public class ExponentialDist implements Distribution {
 
     private final double mean;

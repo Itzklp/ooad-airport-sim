@@ -8,10 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
-/**
- * One airport layout and its run settings, read from a text file of "key = value" lines.
- * AirportBuilder checks the values; this class only stores and reads them.
- */
 public class Scenario {
 
     private final Properties settings;
@@ -22,17 +18,16 @@ public class Scenario {
 
     public static Scenario load(Path file) throws IOException {
         if (!Files.isRegularFile(file)) throw new FileNotFoundException("scenario file not found: " + file);
-        Properties p = new Properties();
-        try (Reader in = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            p.load(in);
+        Properties settings = new Properties();
+        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            settings.load(reader);
         }
-        return new Scenario(p);
+        return new Scenario(settings);
     }
 
-    /** The raw value of a key, or null if it is missing. */
     public String get(String key) {
-        String v = settings.getProperty(key);
-        return v == null ? null : v.trim();
+        String value = settings.getProperty(key);
+        return value == null ? null : value.trim();
     }
 
     public double getDouble(String key) {
@@ -44,8 +39,8 @@ public class Scenario {
     }
 
     public String name() {
-        String n = get("name");
-        return n == null ? "unnamed" : n;
+        String name = get("name");
+        return name == null ? "unnamed" : name;
     }
 
     public String note() {

@@ -7,10 +7,6 @@ import java.util.Random;
 import sim.Distribution;
 import sim.Simulator;
 
-/**
- * Creates passengers at random times, the "Entrance" of the paper's Arena model,
- * and gives each one an airline and a check-in choice. (Factory)
- */
 public class PassengerSource {
 
     private final Distribution interarrival;
@@ -23,30 +19,29 @@ public class PassengerSource {
         this.groups = List.copyOf(groups);
     }
 
-    public void addListener(SimListener l) {
-        listeners.add(l);
+    public void addListener(SimListener listener) {
+        listeners.add(listener);
     }
 
-    /** Creates the next passenger and tells the listeners about it. */
     public Passenger next(Simulator sim) {
-        Random rng = sim.rng();
-        CarrierGroup group = pickGroup(rng.nextDouble());
-        boolean kiosk = rng.nextDouble() < group.kioskShare();
-        Passenger p = new Passenger(++nextId, group, sim.now(), kiosk);
-        for (SimListener l : listeners) l.passengerArrived(p);
-        return p;
+        Random random = sim.rng();
+        CarrierGroup group = pickGroup(random.nextDouble());
+        boolean usesKiosk = random.nextDouble() < group.kioskShare();
+        Passenger passenger = new Passenger(++nextId, group, sim.now(), usesKiosk);
+        for (SimListener listener : listeners) listener.passengerArrived(passenger);
+        return passenger;
     }
 
-    /** Time of the next arrival. A gap below zero (the paper's formula starts at -0.001) is taken as zero. */
+    // The paper's arrival formula starts at -0.001, so a gap below zero is taken as zero.
     public double nextArrivalTime(Simulator sim) {
         return sim.now() + Math.max(0.0, interarrival.sample(sim.rng()));
     }
 
-    private CarrierGroup pickGroup(double u) {
-        double cumulative = 0.0;
-        for (CarrierGroup g : groups) {
-            cumulative += g.share();
-            if (u < cumulative) return g;
+    private CarrierGroup pickGroup(double draw) {
+        double runningShare = 0.0;
+        for (CarrierGroup group : groups) {
+            runningShare += group.share();
+            if (draw < runningShare) return group;
         }
         return groups.get(groups.size() - 1);
     }

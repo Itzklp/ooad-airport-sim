@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import airport.Airport;
 import airport.ResourceType;
 import airport.ServicePoint;
+import results.StatisticsCollector;
 
-/** Phase 3: reading and checking scenarios. Covers requirements 1 and 2. */
 class ScenarioCheckTest {
 
     private final AirportBuilder builder = new AirportBuilder();
@@ -29,82 +29,83 @@ class ScenarioCheckTest {
 
     @Test
     void threePlantedErrorsAreAllReported() throws IOException {
-        Properties p = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
-        p.setProperty("group.AC.share", "0.0013");               // shares no longer add up to 1
-        p.setProperty("group.SW.counterTime", "54 + EXPO(0)");   // the paper's printed zero
-        p.setProperty("group.US.counterLines", "5");             // more lines than counters
-        List<String> errors = builder.check(new Scenario(p));
-        assertEquals(3, errors.size(), errors.toString());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("shares add up to")), errors.toString());
-        assertTrue(errors.stream().anyMatch(e -> e.startsWith("group.SW.counterTime")), errors.toString());
-        assertTrue(errors.stream().anyMatch(e -> e.contains("group.US.counterLines: more lines than service points")), errors.toString());
+        Properties settings = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
+        settings.setProperty("group.AC.share", "0.0013");
+        settings.setProperty("group.SW.counterTime", "54 + EXPO(0)");
+        settings.setProperty("group.US.counterLines", "5");
+        List<String> problems = builder.check(new Scenario(settings));
+        assertEquals(3, problems.size(), problems.toString());
+        assertTrue(problems.stream().anyMatch(problem -> problem.contains("shares add up to")), problems.toString());
+        assertTrue(problems.stream().anyMatch(problem -> problem.startsWith("group.SW.counterTime")), problems.toString());
+        assertTrue(problems.stream().anyMatch(problem -> problem.contains("group.US.counterLines: more lines than service points")), problems.toString());
     }
 
     @Test
     void anEmptyScenarioListsEveryMissingValue() {
-        List<String> errors = builder.check(new Scenario(new Properties()));
+        List<String> problems = builder.check(new Scenario(new Properties()));
         for (String key : List.of("runs", "hours", "seed", "arrival", "checkin.lineRule", "groups",
                 "security.lanes", "security.lineRule", "security.time", "security.stopShare")) {
-            assertTrue(errors.stream().anyMatch(e -> e.startsWith(key)), key + " not reported in " + errors);
+            assertTrue(problems.stream().anyMatch(problem -> problem.startsWith(key)), key + " not reported in " + problems);
         }
     }
 
     @Test
     void wrongValuesAreReported() throws IOException {
-        Properties p = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
-        p.setProperty("runs", "0");
-        p.setProperty("seed", "abc");
-        p.setProperty("checkin.lineRule", "fastest");
-        p.setProperty("security.stopShare", "1.5");
-        p.setProperty("group.AC.kiosks", "-1");
-        List<String> errors = builder.check(new Scenario(p));
-        assertTrue(errors.contains("runs must be at least 1"), errors.toString());
-        assertTrue(errors.contains("seed must be a whole number"), errors.toString());
-        assertTrue(errors.contains("checkin.lineRule must be random or shortest"), errors.toString());
-        assertTrue(errors.contains("security.stopShare must be between 0 and 1"), errors.toString());
-        assertTrue(errors.contains("group.AC.kiosks cannot be negative"), errors.toString());
+        Properties settings = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
+        settings.setProperty("runs", "0");
+        settings.setProperty("seed", "abc");
+        settings.setProperty("checkin.lineRule", "fastest");
+        settings.setProperty("security.stopShare", "1.5");
+        settings.setProperty("group.AC.kiosks", "-1");
+        List<String> problems = builder.check(new Scenario(settings));
+        assertTrue(problems.contains("runs must be at least 1"), problems.toString());
+        assertTrue(problems.contains("seed must be a whole number"), problems.toString());
+        assertTrue(problems.contains("checkin.lineRule must be random or shortest"), problems.toString());
+        assertTrue(problems.contains("security.stopShare must be between 0 and 1"), problems.toString());
+        assertTrue(problems.contains("group.AC.kiosks cannot be negative"), problems.toString());
     }
 
     @Test
     void kiosksAreRequiredOnlyIfSomeoneUsesThem() throws IOException {
-        Properties p = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
-        p.setProperty("group.AC.kiosks", "0");
-        p.setProperty("group.AC.kioskLines", "0");
-        assertTrue(builder.check(new Scenario(p)).contains("group.AC.kiosks: at least one is needed"));
-        p.setProperty("group.AC.kioskShare", "0");
-        assertEquals(List.of(), builder.check(new Scenario(p)));
+        Properties settings = TestScenarios.settingsOf(TestScenarios.REAL_WORLD);
+        settings.setProperty("group.AC.kiosks", "0");
+        settings.setProperty("group.AC.kioskLines", "0");
+        assertTrue(builder.check(new Scenario(settings)).contains("group.AC.kiosks: at least one is needed"));
+        settings.setProperty("group.AC.kioskShare", "0");
+        assertEquals(List.of(), builder.check(new Scenario(settings)));
     }
 
     @Test
     void aMissingFileGivesAClearMessage() {
-        IOException e = assertThrows(IOException.class, () -> Scenario.load(Path.of("scenarios/no_such_file.properties")));
-        assertTrue(e.getMessage().startsWith("scenario file not found:"), e.getMessage());
+        IOException failure = assertThrows(IOException.class, () -> Scenario.load(Path.of("scenarios/no_such_file.properties")));
+        assertTrue(failure.getMessage().startsWith("scenario file not found:"), failure.getMessage());
     }
 
     @Test
     void theBuiltAirportHasTheCountsOfTheScenario() throws IOException {
-        Airport a = builder.build(Scenario.load(TestScenarios.REAL_WORLD), new results.StatisticsCollector());
-        Scenario s = Scenario.load(TestScenarios.REAL_WORLD);
+        Scenario scenario = Scenario.load(TestScenarios.REAL_WORLD);
+        Airport airport = builder.build(scenario, new StatisticsCollector());
         int kiosks = 0;
         int counters = 0;
-        for (String g : List.of("AC", "SW", "US")) {
-            kiosks += s.getInt("group." + g + ".kiosks");
-            counters += s.getInt("group." + g + ".counters");
+        for (String key : List.of("AC", "SW", "US")) {
+            kiosks += scenario.getInt("group." + key + ".kiosks");
+            counters += scenario.getInt("group." + key + ".counters");
         }
-        assertEquals(kiosks, countOf(a, ResourceType.SELF_CHECK_IN));
-        assertEquals(counters, countOf(a, ResourceType.MANNED_CHECK_IN));
-        assertEquals(s.getInt("security.lanes"), countOf(a, ResourceType.SECURITY));
-        assertEquals(3, a.groups().size());
+        assertEquals(kiosks, countOf(airport, ResourceType.SELF_CHECK_IN));
+        assertEquals(counters, countOf(airport, ResourceType.MANNED_CHECK_IN));
+        assertEquals(scenario.getInt("security.lanes"), countOf(airport, ResourceType.SECURITY));
+        assertEquals(3, airport.groups().size());
     }
 
     @Test
     void splitLinesShareOneReportCategory() throws IOException {
-        Airport a = builder.build(Scenario.load(TestScenarios.TWO_LINES), new results.StatisticsCollector());
-        long southwestCounterLines = a.lines().stream().filter(l -> l.category().equals("Southwest manned check-in")).count();
+        Airport airport = builder.build(Scenario.load(TestScenarios.TWO_LINES), new StatisticsCollector());
+        long southwestCounterLines = airport.lines().stream()
+                .filter(line -> line.category().equals("Southwest manned check-in")).count();
         assertEquals(2, southwestCounterLines, "two lines, reported together as in the paper");
     }
 
-    private static long countOf(Airport a, ResourceType type) {
-        return a.servicePoints().stream().map(ServicePoint::type).filter(t -> t == type).count();
+    private static long countOf(Airport airport, ResourceType type) {
+        return airport.servicePoints().stream().map(ServicePoint::type).filter(pointType -> pointType == type).count();
     }
 }

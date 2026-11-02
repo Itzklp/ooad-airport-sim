@@ -23,7 +23,6 @@ import airport.WaitingLine;
 import sim.Distribution;
 import sim.Simulator;
 
-/** Phase 3: one run's statistics, worked out by hand on a tiny airport with constant times. */
 class StatisticsCollectorTest {
 
     private static Distribution constant(double value) {
@@ -40,10 +39,7 @@ class StatisticsCollectorTest {
         };
     }
 
-    /**
-     * Two airlines, but only "Used" gets passengers: one arrives every 100 s and goes to one counter (30 s),
-     * then one screening lane (20 s). The kiosk line of "Used" and the airline "Empty" see nobody.
-     */
+    // Only "Used" gets passengers: one every 100 s, a counter of 30 s, then a screening lane of 20 s.
     private static RunResult runTinyAirport(double endTime) {
         StatisticsCollector stats = new StatisticsCollector();
         CarrierGroup used = new CarrierGroup("Used", 1, 0);
@@ -73,32 +69,32 @@ class StatisticsCollectorTest {
 
     @Test
     void arrivalsAreCountedByAirlineIncludingZero() {
-        RunResult r = runTinyAirport(1000);
-        assertEquals(Map.of("Used", 11, "Empty", 0), r.arrivals(), "arrivals at 0, 100, ..., 1000");
+        RunResult run = runTinyAirport(1000);
+        assertEquals(Map.of("Used", 11, "Empty", 0), run.arrivals(), "arrivals at 0, 100, ..., 1000");
     }
 
     @Test
     void utilizationIsBusyTimeOverAvailableTime() {
-        RunResult r = runTinyAirport(1000);
-        // passengers at 0..900 are fully served; the one at 1000 has just started (0 s busy so far)
-        assertEquals(10 * 30 / 1000.0, r.utilization().get(ResourceType.MANNED_CHECK_IN), 1e-9);
-        assertEquals(0.0, r.utilization().get(ResourceType.SELF_CHECK_IN), 1e-9);
-        assertEquals(10 * 20 / 1000.0, r.utilization().get(ResourceType.SECURITY), 1e-9);
+        RunResult run = runTinyAirport(1000);
+        // passengers arriving at 0..900 are fully served; the one at 1000 has only just started
+        assertEquals(10 * 30 / 1000.0, run.utilization().get(ResourceType.MANNED_CHECK_IN), 1e-9);
+        assertEquals(0.0, run.utilization().get(ResourceType.SELF_CHECK_IN), 1e-9);
+        assertEquals(10 * 20 / 1000.0, run.utilization().get(ResourceType.SECURITY), 1e-9);
     }
 
     @Test
     void aServiceInProgressAtTheEndCountsUpToTheEnd() {
-        RunResult r = runTinyAirport(1010);
-        assertEquals((10 * 30 + 10) / 1010.0, r.utilization().get(ResourceType.MANNED_CHECK_IN), 1e-9);
+        RunResult run = runTinyAirport(1010);
+        assertEquals((10 * 30 + 10) / 1010.0, run.utilization().get(ResourceType.MANNED_CHECK_IN), 1e-9);
     }
 
     @Test
     void everyLineCategoryIsReportedEvenIfNobodyUsedIt() {
-        RunResult r = runTinyAirport(1000);
-        assertEquals(List.of("Used self check-in", "Used manned check-in", "Security 1"), List.copyOf(r.waits().keySet()));
-        assertEquals(0, r.waits().get("Used self check-in").count());
-        assertEquals(11, r.waits().get("Used manned check-in").count());
-        assertEquals(0.0, r.waits().get("Used manned check-in").max(), "nobody waited: one arrival per 100 s");
-        assertFalse(r.waits().containsKey("Empty manned check-in"), "Empty has no check-in area in this test");
+        RunResult run = runTinyAirport(1000);
+        assertEquals(List.of("Used self check-in", "Used manned check-in", "Security 1"), List.copyOf(run.waits().keySet()));
+        assertEquals(0, run.waits().get("Used self check-in").count());
+        assertEquals(11, run.waits().get("Used manned check-in").count());
+        assertEquals(0.0, run.waits().get("Used manned check-in").max(), "nobody waited: one arrival per 100 s");
+        assertFalse(run.waits().containsKey("Empty manned check-in"), "Empty has no check-in area in this test");
     }
 }

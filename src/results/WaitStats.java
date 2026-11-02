@@ -1,6 +1,5 @@
 package results;
 
-/** Count, total, minimum and maximum of the waits recorded for one category of line. */
 public class WaitStats {
 
     private long count = 0;
